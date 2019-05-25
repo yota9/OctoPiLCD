@@ -39,13 +39,14 @@ class DisplayLCD(object):
     def sayGoodbye(self):
         self.lcd.clear()
         self.lcd.set_color(0,0,0)
+        self.lcd.message("No printing\n" + "process")
 
 class PrintData(object):
     # Setup Octopi API Interaction                               
     post_params = {}
-    file_endpoint = 'http://octopi.local/api/files'
-    job_endpoint = 'http://octopi.local/api/job'
-    printer_endpoint = 'http://octopi.local/api/printer'
+    file_endpoint = 'http://192.168.1.46:5000/api/files'
+    job_endpoint = 'http://192.168.1.46:5000/api/job'
+    printer_endpoint = 'http://192.168.1.46:5000/api/printer'
     
     remain = 0
     fileName = 'None'
@@ -79,10 +80,10 @@ class PrintData(object):
         # Get Printer Data, only works if printer is connected
         printer_response = requests.get(self.printer_endpoint, headers=self.query_headers)
         printer_data = printer_response.json()
-        self.toolTemp = printer_data['temps']['tool0']['actual']
-        self.toolTarget = printer_data['temps']['tool0']['target']
-        self.bedTemp = printer_data['temps']['bed']['actual']
-        self.bedTarget = printer_data['temps']['bed']['target']
+        self.toolTemp = printer_data['temperature']['tool0']['actual']
+        self.toolTarget = printer_data['temperature']['tool0']['target']
+        self.bedTemp = printer_data['temperature']['bed']['actual']
+        self.bedTarget = printer_data['temperature']['bed']['target']
         
     def checkPrinter(self):
         if isinstance(self.completion, NoneType):
@@ -127,7 +128,7 @@ class PrintData(object):
         self.colorB = 1.0
 
     def setMessage2(self):
-        self.message = "Elpsd: " + self.getPrintTime() + '\n' + "Rmn: " + self.getRemain()
+        self.message = "T: " + self.getPrintTime() + " " + self.getCompletion() + '\n' + "Rmn: " + self.getRemain()
         self.colorR = 0.0
         self.colorG = 1.0
         self.colorB = 1.0
@@ -140,7 +141,7 @@ class PrintData(object):
 
 pData = PrintData(key)
 dLCD = DisplayLCD()
-test = 0
+test = 1
 
 while pData.checkPrinter():
 
@@ -151,22 +152,13 @@ while pData.checkPrinter():
         test = 1
     elif test == 1:
         pData.setMessage2()
-        test = 2
+        test = 1
     else:
         pData.setMessage3()
         test = 0
     
     dLCD.updateDisplay(pData)
-    sleep(5)
-
-while (pData.toolTemp > 50.0) | (pData.bedTemp > 30.0):
+    sleep(3)
     
-    pData.updatePrintData()
-    
-    pData.setMessage3()
-    
-    dLCD.updateDisplay(pData)
-    sleep(1)
-
 dLCD.sayGoodbye()
 
